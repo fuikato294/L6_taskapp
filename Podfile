@@ -6,6 +6,6 @@ target 'L6 taskapp' do
   use_frameworks!
 
   # Pods for L6 taskapp
-  pod 'RealmSwift','10.1.4'
+  pod 'RealmSwift'
 
 end
