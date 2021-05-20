@@ -9,9 +9,10 @@ import UIKit
 import RealmSwift
 import UserNotifications
 
-class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
     
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var searchBar: UISearchBar!
     
     // Realmインスタンスを取得する
     let realm = try! Realm()  // ←追加
@@ -27,6 +28,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         // Do any additional setup after loading the view.
         tableView.delegate = self
         tableView.dataSource = self
+        searchBar.delegate = self
     }
 
     // tableView(_:numberOfRowsInSection:)はtaskArrayの要素数（＝セルの数）を返すメソッド
@@ -41,7 +43,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         // 再利用可能な cell を得る
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         
-        // Cellに値を設定する.
+        // CellにtitleとDateの値が入るよう設定する.
         let task = taskArray[indexPath.row]
         cell.textLabel?.text = task.title
 
@@ -70,7 +72,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // Delete ボタンが押された時に呼ばれるメソッド
     // データベースのRealmクラスのdeleteメソッドに削除したいオブジェクト（今回はTaskクラスのインスタンス）を与えることで削除する
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        
+        // EditingStyleのうち、今回はdeleteを使用するという宣言
         if editingStyle == .delete {
             
             // 削除するタスクを取得する
@@ -85,6 +87,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             // 今回はdeleteメソッドがエラーを発生させる可能性があるものの、その可能性が低いためtry! を記述することで無視させます
             try! realm.write {
                 self.realm.delete(self.taskArray[indexPath.row])
+                // reloadDataではなく、行(Rows)によって削除するセルを指定し、fadeのアニメーションで画面から削除
                 tableView.deleteRows(at: [indexPath], with: .fade)
             }
         
@@ -103,13 +106,14 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     override func prepare(for segue: UIStoryboardSegue, sender: Any?){
         let InputViewController:InputViewController = segue.destination as! InputViewController
 
-
+        // if文によって、cellSegueで遷移した場合（既存セルからの編集）と、右上の+から遷移した場合（新規）との処理の違いを記述
         if segue.identifier == "cellSegue" {
             let indexPath = self.tableView.indexPathForSelectedRow
             InputViewController.task = taskArray[indexPath!.row]
         } else {
             let task = Task()
-
+            // 新規作成の場合には、もっとも番号の大きい新規idにする
+            // Realmに全てのtaskのうちidがmaxであるものを探させて、そこに+１したidを付与する
             let allTasks = realm.objects(Task.self)
             if allTasks.count != 0 {
                 task.id = allTasks.max(ofProperty: "id")! + 1
@@ -123,8 +127,26 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // Bool は、真か偽かの値をとる型
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // リロード
         tableView.reloadData()
     }
     
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        if let text = searchBar.text {
+            // もしsearchBarが空欄ならば
+            if text == "" {
+                // 日付(date)を見て、昇順(ascending)に並べて(sorted)
+                taskArray = try! Realm().objects(Task.self).sorted(byKeyPath: "date", ascending: true)
+            // 検索ワードが入っていれば
+            } else {
+                // ("category == '\(text)'")は、検索ワードをユーザが入力するまでわからない状態にあることを示す
+                taskArray = try! Realm().objects(Task.self).filter("category == '\(text)'")
+            }
+            // どっちにしろリロード
+            tableView.reloadData()
+        }
     }
+    
+}
 

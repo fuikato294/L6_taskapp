@@ -9,8 +9,10 @@ import UIKit
 import RealmSwift
 import UserNotifications
 
+// SBで配置したUIViewごとに接続
 class InputViewController: UIViewController {
     @IBOutlet weak var titleTextField: UITextField!
+    @IBOutlet weak var categoryTextField: UITextField!
     @IBOutlet weak var contentsTextView: UITextView!
     @IBOutlet weak var datePicker: UIDatePicker!
     
@@ -33,10 +35,11 @@ class InputViewController: UIViewController {
     }
     
     // viewWillDisappear(_:)メソッドは、遷移する際に画面が非表示になる前に呼ばれるメソッド
-    // ここではRealmのwrite(_:)メソッドを使用し、削除の時同様にtry!をつける
+    // ここではRealmのwrite(_:)メソッドを使用し、RealmにIVC画面でユーザの入力したデータを書き込む処理を実装
     override func viewWillDisappear(_ animated: Bool) {
         try! realm.write {
             self.task.title = self.titleTextField.text!
+            self.task.category = self.categoryTextField.text!
             self.task.contents = self.contentsTextView.text
             self.task.date = self.datePicker.date
             self.realm.add(self.task, update: .modified)
@@ -55,6 +58,11 @@ class InputViewController: UIViewController {
                 content.title = "(タイトルなし)"
             } else {
                 content.title = task.title
+            }
+            if task.category == "" {
+                content.subtitle = "(カテゴリなし)"
+            } else {
+                content.subtitle = task.category
             }
             if task.contents == "" {
                 content.body = "(内容なし)"
