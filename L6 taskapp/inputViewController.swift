@@ -30,6 +30,7 @@ class InputViewController: UIViewController {
         self.view.addGestureRecognizer(tapGesture)
 
         titleTextField.text = task.title
+        categoryTextField.text = task.category
         contentsTextView.text = task.contents
         datePicker.date = task.date
     }
@@ -40,7 +41,7 @@ class InputViewController: UIViewController {
         try! realm.write {
             self.task.title = self.titleTextField.text!
             self.task.category = self.categoryTextField.text!
-            self.task.contents = self.contentsTextView.text
+            self.task.contents = self.contentsTextView.text!
             self.task.date = self.datePicker.date
             self.realm.add(self.task, update: .modified)
         }
